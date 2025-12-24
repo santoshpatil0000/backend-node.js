@@ -13,9 +13,9 @@ class ApiError extends Error {
         this.errors = errors
 
         if (stack) {
-            this.stack = stack
+            this.stack = stack  // custom stack trace where error is created for better debugging in that file/location
         } else{
-            Error.captureStackTrace(this, this.constructor)
+            Error.captureStackTrace(this, this.constructor) // default stack trace if no custom stack is provided
         }
 
     }

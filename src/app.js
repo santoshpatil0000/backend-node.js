@@ -5,14 +5,16 @@ import cookieParser from "cookie-parser"
 const app = express()
 
 app.use(cors({
-    origin: process.env.CORS_ORIGIN,
+    origin: process.env.CORS_ORIGIN, // CORS middleware configuration for all origins    // e.g., 'http://myDomain.com'
     credentials: true
 }))
 
-app.use(express.json({limit: "16kb"}))
-app.use(express.urlencoded({extended: true, limit: "16kb"}))
-app.use(express.static("public"))
-app.use(cookieParser())
+// app.use(cors(process.env.CORS_ORIGIN))  // CORS middleware with multiple origins support op
+
+app.use(express.json({limit: "16kb"}))  // to parse JSON request body with size limit
+app.use(express.urlencoded({extended: true, limit: "16kb"}))    // to parse URL-encoded in URL with size limit
+app.use(express.static("public"))   // to serve static files from 'public' directory
+app.use(cookieParser()) // to parse cookies from incoming requests for CRUD operations
 
 
 //routes import
