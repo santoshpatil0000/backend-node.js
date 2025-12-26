@@ -10,17 +10,17 @@ import mongoose from "mongoose";
 const generateAccessAndRefereshTokens = async (userId) => {
     try {
         const user = await User.findById(userId)
-        const accessToken = user.generateAccessToken()
-        const refreshToken = user.generateRefreshToken()
+        const accessToken = user.generateAccessToken()      // use the custom instance method("generateAccessToken") defined in user model to generate access token for the user instance
+        const refreshToken = user.generateRefreshToken()    // use the custom instance method("generateRefreshToken") defined in user model to generate refresh token for the user instance
 
-        user.refreshToken = refreshToken
-        await user.save({ validateBeforeSave: false })
+        user.refreshToken = refreshToken                    // store the generated refresh token in user document's refreshToken field in DB for session management
+        await user.save({ validateBeforeSave: false })      // save the user document with updated refresh token field in DB without running any validation checks on other fields(like required fields, etc. defined in user model schema) -> "validateBeforeSave: false" will skip those validation checks
 
         return { accessToken, refreshToken }
 
 
     } catch (error) {
-        throw new ApiError(500, "Something went wrong while generating referesh and access token")
+        throw new ApiError(500, "Something went wrong while generating refresh and access token")
     }
 }
 
@@ -108,12 +108,14 @@ const registerUser = asyncHandler(async (req, res) => {
 })
 
 const loginUser = asyncHandler(async (req, res) => {
-    // req body -> data
+    // req body -> fetch data
     // username or email
-    //find the user
-    //password check
-    //access and referesh token
-    //send cookie
+    // find the user
+    // password check
+    // password failed in checking -> error
+    // password matches -> generate access and refresh token and send to user in secure http only cookie
+    // send cookie
+    // send success response
 
     const { email, username, password } = req.body
     console.log(email);
@@ -125,18 +127,17 @@ const loginUser = asyncHandler(async (req, res) => {
     // Here is an alternative of above code based on logic discussed in video:
     // if (!(username || email)) {
     //     throw new ApiError(400, "username or email is required")
-
     // }
 
-    const user = await User.findOne({
-        $or: [{ username }, { email }]
+    const user = await User.findOne({   // "user" will be having all custom instance methods defined in user model as well along with user document fields stored in DB
+        $or: [{ username }, { email }]  // find user by username or email
     })
 
     if (!user) {
         throw new ApiError(404, "User does not exist")
     }
 
-    const isPasswordValid = await user.isPasswordCorrect(password)
+    const isPasswordValid = await user.isPasswordCorrect(password)   // use the custom instance method("isPasswordCorrect") defined in user model to compare passwords(password -> from req body, user.password -> compared with stored hashed password in DB)
 
     if (!isPasswordValid) {
         throw new ApiError(401, "Invalid user credentials")
@@ -144,16 +145,25 @@ const loginUser = asyncHandler(async (req, res) => {
 
     const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(user._id)
 
-    const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken")    // remove password and refresh token field from response using mongoose select method
 
-    const options = {
+    // above "loggedInUser" can also be created without making DB call,
+    /* 
+    const loggedInUser = {
+        ...user,
+        password: "",
+        refreshToken: ""
+    }
+    */
+
+    const options = {       // by setting httpOnly: true and secure: true, the cookie cannot be modified via client-side(FE) and will only be modified via server-side(BE) and will be sent only over HTTP connection for security purpose
         httpOnly: true,
         secure: true
     }
 
     return res
         .status(200)
-        .cookie("accessToken", accessToken, options)
+        .cookie("accessToken", accessToken, options)            // .cookie("key", "value", options) -> is set in app.use(cookieParser()) middleware in app.js
         .cookie("refreshToken", refreshToken, options)
         .json(
             new ApiResponse(
@@ -168,6 +178,7 @@ const loginUser = asyncHandler(async (req, res) => {
 })
 
 const logoutUser = asyncHandler(async (req, res) => {
+    // since we dont have "user._id" access in "logoutUser" controller, we will inject custom middleware(auth.middleware.js) "verifyJWT" in the route to verify access token and get user details from token and set it in req.user
     await User.findByIdAndUpdate(
         req.user._id,
         {
@@ -176,7 +187,7 @@ const logoutUser = asyncHandler(async (req, res) => {
             }
         },
         {
-            new: true
+            new: true           // returns the updated document(with refreshToken field removed) after update operation
         }
     )
 
