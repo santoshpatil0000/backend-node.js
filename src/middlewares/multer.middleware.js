@@ -6,7 +6,7 @@ const storage = multer.diskStorage({
     },
     filename: function (req, file, cb) {
       
-      cb(null, file.originalname)
+      cb(null, file.originalname)   // use filename as unique identifier while saving temporarily(with same name can be overwritten) before uploading to cloudinary
     }
   })
   
