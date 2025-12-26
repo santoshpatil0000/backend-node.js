@@ -101,8 +101,8 @@ const registerUser = asyncHandler(async (req, res) => {
     }
 
     // every created document/entry will give default created fields in return ( e.g: in "createdUser")
-    return res.status(201).json(
-        new ApiResponse(200, createdUser, "User registered Successfully")
+    return res.status(201).json(            // stsatus code 201 will be shown in postman for successful creation of resource
+        new ApiResponse(200, createdUser, "User registered Successfully")   // custom api response structure to FE
     )
 
 })
