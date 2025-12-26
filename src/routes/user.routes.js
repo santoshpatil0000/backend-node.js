@@ -1,41 +1,41 @@
 import { Router } from "express";
-import { 
-    loginUser, 
-    logoutUser, 
-    registerUser, 
-    refreshAccessToken, 
-    changeCurrentPassword, 
-    getCurrentUser, 
-    updateUserAvatar, 
-    updateUserCoverImage, 
-    getUserChannelProfile, 
-    getWatchHistory, 
+import {
+    loginUser,
+    logoutUser,
+    registerUser,
+    refreshAccessToken,
+    changeCurrentPassword,
+    getCurrentUser,
+    updateUserAvatar,
+    updateUserCoverImage,
+    getUserChannelProfile,
+    getWatchHistory,
     updateAccountDetails
 } from "../controllers/user.controller.js";
-import {upload} from "../middlewares/multer.middleware.js"
+import { upload } from "../middlewares/multer.middleware.js"
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 
 const router = Router()
 
 router.route("/register").post(         // http://localhost:8000/api/v1/users/register
-    upload.fields([
+    upload.fields([                     // to handle multiple file upload(middlewares) with different field names(using multer - see multer.middleware.js for more details)
         {
-            name: "avatar",
-            maxCount: 1
-        }, 
+            name: "avatar",             // field name in the form-data for avatar image(FE also should use same field as "avatar" name while sending request)
+            maxCount: 1                 // maxCount to specify only one file should be uploaded for this field
+        },
         {
-            name: "coverImage",
-            maxCount: 1
+            name: "coverImage",         // field name in the form-data for cover image(FE also should use same field as "coverImage" name while sending request)
+            maxCount: 1                 // maxCount to specify only one file should be uploaded for this field
         }
     ]),
     registerUser
-    )
+)
 
 router.route("/login").post(loginUser)
 
 //secured routes
-router.route("/logout").post(verifyJWT,  logoutUser)
+router.route("/logout").post(verifyJWT, logoutUser)
 router.route("/refresh-token").post(refreshAccessToken)
 router.route("/change-password").post(verifyJWT, changeCurrentPassword)
 router.route("/current-user").get(verifyJWT, getCurrentUser)

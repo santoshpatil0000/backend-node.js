@@ -43,10 +43,10 @@ const registerUser = asyncHandler(async (req, res) => {
 
 
     const { fullName, email, username, password } = req.body
-    //console.log("email: ", email);
+    // console.log("email: ", email);
 
     if (
-        [fullName, email, username, password].some((field) => field?.trim() === "")
+        [fullName, email, username, password].some((field) => field?.trim() === "")     // check if any field is empty string after trimming
     ) {
         throw new ApiError(400, "All fields are required")
     }
@@ -55,12 +55,12 @@ const registerUser = asyncHandler(async (req, res) => {
         $or: [{ username }, { email }]
     })
 
-    if (existedUser) {
+    if (existedUser) {                                                                  // check if user with same username or email already exists
         throw new ApiError(409, "User with email or username already exists")
     }
     //console.log(req.files);
 
-    const avatarLocalPath = req.files?.avatar[0]?.path;
+    const avatarLocalPath = req.files?.avatar[0]?.path;                                 // get the local path of uploaded avatar file from multer middleware(../../public/temp/xyz.jpg)
     //const coverImageLocalPath = req.files?.coverImage[0]?.path;
 
     let coverImageLocalPath;
@@ -73,31 +73,34 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Avatar file is required")
     }
 
-    const avatar = await uploadOnCloudinary(avatarLocalPath)
-    const coverImage = await uploadOnCloudinary(coverImageLocalPath)
+    const avatar = await uploadOnCloudinary(avatarLocalPath)                  // upload avatar image to cloudinary and get the uploaded image details (like url, public_id, etc.)
+    const coverImage = await uploadOnCloudinary(coverImageLocalPath)          // upload cover image to cloudinary and get the uploaded image details (like url, public_id, etc.)
 
     if (!avatar) {
         throw new ApiError(400, "Avatar file is required")
     }
 
 
+    // create user entry in the database
     const user = await User.create({
         fullName,
         avatar: avatar.url,
-        coverImage: coverImage?.url || "",
+        coverImage: coverImage?.url || "",                  // if cover image is not uploaded, set it to empty string(optional field in user model-not required)
         email,
         password,
         username: username.toLowerCase()
     })
 
+    // check if user is created successfully in DB(_id is created by default by mongoose for each document/entry)
     const createdUser = await User.findById(user._id).select(
-        "-password -refreshToken"
+        "-password -refreshToken"                           // remove password and refresh token field from response using mongoose select method
     )
 
     if (!createdUser) {
         throw new ApiError(500, "Something went wrong while registering the user")
     }
 
+    // every created document/entry will give default created fields in return ( e.g: in "createdUser")
     return res.status(201).json(
         new ApiResponse(200, createdUser, "User registered Successfully")
     )
