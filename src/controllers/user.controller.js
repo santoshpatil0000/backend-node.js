@@ -58,7 +58,7 @@ const registerUser = asyncHandler(async (req, res) => {
     if (existedUser) {                                                                  // check if user with same username or email already exists
         throw new ApiError(409, "User with email or username already exists")
     }
-    //console.log(req.files);
+    //console.log(req.files);                                                           // req.files(not req.file) -> to handle multiple file uploads(avatar, cover image, etc.) using multer middleware in user.routes.js            
 
     const avatarLocalPath = req.files?.avatar[0]?.path;                                 // get the local path of uploaded avatar file from multer middleware(../../public/temp/xyz.jpg)
     //const coverImageLocalPath = req.files?.coverImage[0]?.path;
@@ -259,17 +259,15 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 const changeCurrentPassword = asyncHandler(async (req, res) => {
     const { oldPassword, newPassword } = req.body
 
-
-
-    const user = await User.findById(req.user?._id)
+    const user = await User.findById(req.user?._id)     // req.user is set in "verifyJWT" middleware injected in the route during login to get user details from access token
     const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
 
-    if (!isPasswordCorrect) {
+    if (!isPasswordCorrect) {                           // check if old password is correct or not from DB
         throw new ApiError(400, "Invalid old password")
     }
 
-    user.password = newPassword
-    await user.save({ validateBeforeSave: false })
+    user.password = newPassword                         // set new password will be hashed in pre-save("this.isModified("password")") hook defined in user model before saving to DB
+    await user.save({ validateBeforeSave: false })      // save the user document with updated password field in DB without running any validation checks on other fields(like required fields, etc. defined in user model schema) -> "validateBeforeSave: false" will skip those validation checks
 
     return res
         .status(200)
@@ -288,6 +286,9 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 })
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
+    // for best practice, file uploads should be handled in separate routes(avatar, cover image, etc.) so here we will only update text fields like fullName, email, etc.
+    // reason-1: if we handle file uploads here as well, then if user only wants to update text fields and not images, still FE will have to send image files in form-data which is not optimal
+    // reason-2: if we handle file uploads here as well, then only for file upload need to call user update endpoint, which is not optimal
     const { fullName, email } = req.body
 
     if (!fullName || !email) {
@@ -302,7 +303,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
                 email: email
             }
         },
-        { new: true }
+        { new: true }           // this will help to return the updated document after update operation
 
     ).select("-password")
 
@@ -312,15 +313,16 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
 });
 
 const updateUserAvatar = asyncHandler(async (req, res) => {
-    const avatarLocalPath = req.file?.path
+    const avatarLocalPath = req.file?.path      // req.file -> to handle single file upload using multer middleware in user.routes.js
+    const oldAvatarUrl = req.user?.avatar       // from DB
 
     if (!avatarLocalPath) {
         throw new ApiError(400, "Avatar file is missing")
     }
 
-    //TODO: delete old image - assignment
+    //TODO: delete old image - assignment - done in cloudinary.js utility function
 
-    const avatar = await uploadOnCloudinary(avatarLocalPath)
+    const avatar = await uploadOnCloudinary(avatarLocalPath, oldAvatarUrl)
 
     if (!avatar.url) {
         throw new ApiError(400, "Error while uploading on avatar")
@@ -345,19 +347,20 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 })
 
 const updateUserCoverImage = asyncHandler(async (req, res) => {
-    const coverImageLocalPath = req.file?.path
+    const coverImageLocalPath = req.file?.path      // req.file -> to handle single file upload using multer middleware in user.routes.js
+    const oldCoverImageUrl = req.user?.coverImage   // from DB
 
     if (!coverImageLocalPath) {
         throw new ApiError(400, "Cover image file is missing")
     }
 
-    //TODO: delete old image - assignment
+    //TODO: delete old image - assignment - done in cloudinary.js utility function
 
 
-    const coverImage = await uploadOnCloudinary(coverImageLocalPath)
+    const coverImage = await uploadOnCloudinary(coverImageLocalPath, oldCoverImageUrl)
 
     if (!coverImage.url) {
-        throw new ApiError(400, "Error while uploading on avatar")
+        throw new ApiError(400, "Error while uploading on cover image")
 
     }
 
