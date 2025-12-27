@@ -6,7 +6,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken"
 import mongoose from "mongoose";
 
-
+/* "generateAccessAndRefereshTokens" function to generate new access and refresh tokens for a user(whenever needed call this function) */
 const generateAccessAndRefereshTokens = async (userId) => {
     try {
         const user = await User.findById(userId)
@@ -118,7 +118,7 @@ const loginUser = asyncHandler(async (req, res) => {
     // send success response
 
     const { email, username, password } = req.body
-    console.log(email);
+    console.log(email, username, password);
 
     if (!username && !email) {
         throw new ApiError(400, "username or email is required")
@@ -128,6 +128,10 @@ const loginUser = asyncHandler(async (req, res) => {
     // if (!(username || email)) {
     //     throw new ApiError(400, "username or email is required")
     // }
+
+    if (!password || password?.trim() === "") {
+        throw new ApiError(400, "password is required")
+    }
 
     const user = await User.findOne({   // "user" will be having all custom instance methods defined in user model as well along with user document fields stored in DB
         $or: [{ username }, { email }]  // find user by username or email
@@ -203,15 +207,16 @@ const logoutUser = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, {}, "User logged Out"))
 })
 
+/* "refreshAccessToken" is needed when accessToken expires, FE calls one endpoint(without throwing error to the user to login again) to refresh the token(both) if refresh token is still valid */
 const refreshAccessToken = asyncHandler(async (req, res) => {
-    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
+    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken  // get refresh token from cookie or req body from FE
 
     if (!incomingRefreshToken) {
         throw new ApiError(401, "unauthorized request")
     }
 
     try {
-        const decodedToken = jwt.verify(
+        const decodedToken = jwt.verify(                // verify the incoming refresh token with refreshTokenSecret key used while signing the token with jwt.verify
             incomingRefreshToken,
             process.env.REFRESH_TOKEN_SECRET
         )

@@ -34,9 +34,9 @@ router.route("/register").post(         // http://localhost:8000/api/v1/users/re
 
 router.route("/login").post(loginUser)
 
-//secured routes
+//secured routes(using "verifyJWT" middleware to verify access token before allowing user to access these routes)
 router.route("/logout").post(verifyJWT, logoutUser) // logout route is secured and "verifyJWT" middleware is used to verify access token before logging out user(injecting "user" details in req.user from token in verifyJWT middleware from auth.middleware.js)
-router.route("/refresh-token").post(refreshAccessToken)
+router.route("/refresh-token").post(refreshAccessToken) // "verifyJWT" middleware is not used here because "refreshAccessToken" controller itself has "_id" from incoming refresh token to generate new access token
 router.route("/change-password").post(verifyJWT, changeCurrentPassword)
 router.route("/current-user").get(verifyJWT, getCurrentUser)
 router.route("/update-account").patch(verifyJWT, updateAccountDetails)
