@@ -38,3 +38,4 @@ First, please understand that this is not your regular project to merge your PR.
 10. rabbitMQ
 11. pm2 service
 12. collect cheat-sheet for all possibilities
+13. check changing collection name in code(model.js) and in DB
