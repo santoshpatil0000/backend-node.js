@@ -22,3 +22,19 @@ Top Contributer to complete all TODOs
 ## How to contribute in this open source Project
 
 First, please understand that this is not your regular project to merge your PR. This repo requires you to finish all assignments that are in controller folder. We don't accept half work, please finish all controllers and then reach us out on [Discord](https://hitesh.ai/discord) or [Twitter](https://twitter.com/@hiteshdotcom) and after checking your repo, I will add link to your repo in this readme.
+
+
+# Notes for reference
+
+1. model -> controllers -> routes -> app.js
+2. check params api
+3. check all api in postman
+4. Learn aggregate-pipeline
+5. check sql, connections
+6. query in no-sql, sql
+7. email trigger
+8. socket.io
+9. cron
+10. rabbitMQ
+11. pm2 service
+12. collect cheat-sheet for all possibilities
