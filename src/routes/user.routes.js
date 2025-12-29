@@ -39,12 +39,12 @@ router.route("/logout").post(verifyJWT, logoutUser) // logout route is secured a
 router.route("/refresh-token").post(refreshAccessToken) // "verifyJWT" middleware is not used here because "refreshAccessToken" controller itself has "_id" from incoming refresh token to generate new access token
 router.route("/change-password").post(verifyJWT, changeCurrentPassword)
 router.route("/current-user").get(verifyJWT, getCurrentUser)
-router.route("/update-account").patch(verifyJWT, updateAccountDetails)
+router.route("/update-account").patch(verifyJWT, updateAccountDetails) // "/update-account" route to update user account details with "patch" method(NOT "post" method which can update entire resource) as we are updating existing user details partially
 
 router.route("/avatar").patch(verifyJWT, upload.single("avatar"), updateUserAvatar)
 router.route("/cover-image").patch(verifyJWT, upload.single("coverImage"), updateUserCoverImage)
 
-router.route("/c/:username").get(verifyJWT, getUserChannelProfile)
+router.route("/c/:username").get(verifyJWT, getUserChannelProfile)  // get user channel profile by username(":username" is dynamic param in the route and can be accessed in controller using req.params.username)
 router.route("/history").get(verifyJWT, getWatchHistory)
 
 export default router

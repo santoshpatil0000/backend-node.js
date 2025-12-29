@@ -355,6 +355,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     }
 
     //TODO: delete old image - assignment - done in cloudinary.js utility function
+    // add/create new utility function, because post failure of "uploadOnCloudinary" also we are deleting from cloudinary, so need to handle that case properly
 
 
     const coverImage = await uploadOnCloudinary(coverImageLocalPath, oldCoverImageUrl)
@@ -392,44 +393,44 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     const channel = await User.aggregate([
         {
             $match: {
-                username: username?.toLowerCase()
+                username: username?.toLowerCase()       // match the username in case-insensitive way(stored in lowercase in DB)
             }
         },
         {
             $lookup: {
-                from: "subscriptions",
-                localField: "_id",
-                foreignField: "channel",
-                as: "subscribers"
+                from: "subscriptions",                  // collection name in DB
+                localField: "_id",                      // user _id is channel id for subscriptions
+                foreignField: "channel",                // channel field in subscriptions collection
+                as: "subscribers"                       // will create new field "subscribers" in user document(in users collection) with array of matched documents from subscriptions collection
             }
         },
         {
             $lookup: {
-                from: "subscriptions",
-                localField: "_id",
-                foreignField: "subscriber",
-                as: "subscribedTo"
+                from: "subscriptions",                  // collection name in DB
+                localField: "_id",                      // user _id is subscriber id for subscriptions
+                foreignField: "subscriber",             // subscriber field in subscriptions collection
+                as: "subscribedTo"                      // will create new field "subscribedTo" in user document(in users collection) with array of matched documents from subscriptions collection
             }
         },
         {
             $addFields: {
                 subscribersCount: {
-                    $size: "$subscribers"
+                    $size: "$subscribers"               // get the size(count) of "subscribers" array created from previous lookup stage in the field name as "subscribersCount" in user document
                 },
                 channelsSubscribedToCount: {
-                    $size: "$subscribedTo"
+                    $size: "$subscribedTo"              // get the size(count) of "subscribedTo" array created from previous lookup stage in the field name as "channelsSubscribedToCount" in user document
                 },
-                isSubscribed: {
+                isSubscribed: {                         // wheather current logged in user is subscribed to this channel or not
                     $cond: {
-                        if: { $in: [req.user?._id, "$subscribers.subscriber"] },
-                        then: true,
+                        if: { $in: [req.user?._id, "$subscribers.subscriber"] },    // check if current logged in user id(req.user._id set from "verifyJWT" middleware) is present in "subscribers.subscriber" object(from subscriptions collection) or not
+                        then: true,                     // if condition satisfied, then true else false
                         else: false
                     }
                 }
             }
         },
         {
-            $project: {
+            $project: {                                 // select only required fields to be sent in response
                 fullName: 1,
                 username: 1,
                 subscribersCount: 1,
@@ -458,7 +459,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
     const user = await User.aggregate([
         {
             $match: {
-                _id: new mongoose.Types.ObjectId(req.user._id)
+                _id: new mongoose.Types.ObjectId(req.user._id)  // req.user._id -> will be stored as ObjectId('1234abcd...') in DB, so need to convert string from ObjectId using mongoose.Types.ObjectId
             }
         },
         {
@@ -467,7 +468,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
                 localField: "watchHistory",
                 foreignField: "_id",
                 as: "watchHistory",
-                pipeline: [
+                pipeline: [                     // to populate owner details in each video document from user collection(writing pipeline inside lookup will go to from: "videos" collection and for each video document will fetch owner details from "users" collection)
                     {
                         $lookup: {
                             from: "users",
@@ -476,7 +477,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
                             as: "owner",
                             pipeline: [
                                 {
-                                    $project: {
+                                    $project: { // select only required fields to be sent in response from owner in video document
                                         fullName: 1,
                                         username: 1,
                                         avatar: 1
@@ -485,13 +486,21 @@ const getWatchHistory = asyncHandler(async (req, res) => {
                             ]
                         }
                     },
-                    {
+                    {                           // this stage is within videos lookup pipeline, since from lookup we get owner as array with single object(e.g, owner: [{}]), we need to find a way to convert it to object(owner: {}) to make it easy to use in FE, so we use $addFields with $first operator to get first element of owner array with same field name(owner) which will overwrite the owner array with owner object.
                         $addFields: {
                             owner: {
                                 $first: "$owner"
                             }
                         }
-                    }
+                    },
+                    // This will also work instead of "$project" from above lookup pipeline stage with "$project": in "owner" lookup
+                    /*{
+                        $project: {
+                            fullName: 1,
+                            username: 1,
+                            avatar: 1
+                        }
+                    }*/
                 ]
             }
         }

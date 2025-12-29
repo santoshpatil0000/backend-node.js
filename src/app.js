@@ -11,8 +11,8 @@ app.use(cors({
 
 // app.use(cors(process.env.CORS_ORIGIN))  // CORS middleware with multiple origins support op
 
-app.use(express.json({limit: "16kb"}))  // to parse JSON request body with size limit
-app.use(express.urlencoded({extended: true, limit: "16kb"}))    // to parse URL-encoded in URL with size limit
+app.use(express.json({ limit: "16kb" }))  // to parse JSON request body with size limit
+app.use(express.urlencoded({ extended: true, limit: "16kb" }))    // to parse URL-encoded in URL with size limit
 app.use(express.static("public"))   // to serve static files from 'public' directory
 app.use(cookieParser()) // to parse cookies from incoming requests for CRUD operations
 
