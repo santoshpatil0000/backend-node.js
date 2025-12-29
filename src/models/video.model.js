@@ -42,6 +42,12 @@ const videoSchema = new Schema(
     }
 )
 
-videoSchema.plugin(mongooseAggregatePaginate)
+videoSchema.plugin(mongooseAggregatePaginate)   // plugin to add pagination capabilities to aggregate queries on video model
+
+// Creating text index on title and description fields for efficient text search
+videoSchema.index({
+  title: "text",
+  description: "text"
+});
 
 export const Video = mongoose.model("Video", videoSchema)
